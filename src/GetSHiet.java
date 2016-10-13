@@ -1,4 +1,5 @@
 import java.io.*;
+import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -41,7 +42,10 @@ public class GetSHiet {
 
         System.out.println("Progress has been started...");
         System.out.println("...sending multiple HTTP requests\n"+"This may takes a few seconds or even minutes, but many requests in a short period of time isn't appreciated that much. ");
-        addToStringBuilder(new String[]{"id" + delimiter, "name" + delimiter, "date" + delimiter, "rating" + delimiter, "title" + delimiter, "review"});
+        sg = addToStringBuilder(new String[]{"id" + delimiter, "name" + delimiter, "date" + delimiter, "rating" + delimiter, "title" + delimiter, "review"},sg);
+        //addToStringBuilder(new String[]{"id" + delimiter, "name" + delimiter, "date" + delimiter, "rating" + delimiter, "title" + delimiter, "review"});
+        StringBuilder betterOne = new StringBuilder();
+        betterOne = addToStringBuilder(new String[]{"id"+delimiter,"review-parts"+delimiter,"review-rating"},betterOne);
 
         ArrayList<String> elements = new ArrayList<>();//List for separated strings from ONE post request
         for(int p =0;p<=pageNum;p++) {
@@ -63,7 +67,9 @@ public class GetSHiet {
             */
             for (int i = 0; i < elements.size() / 4; i++) {/*the splitted and parsed list is in the pattern above - every fourth line begins a new set of data*/
                 if(p*elements.size()/4+i==reviewCount)break; //stop the loop, when we already reached the given number of reviews the user wanted
-                addToStringBuilder(new String[]{String.valueOf(p*elements.size()/4+i) + delimiter, elements.get(4 * i).substring(2).replace(" " + delimiter + " ", delimiter), elements.get(4 * i + 1), elements.get(4 * i + 2), elements.get(4 * i + 3)});
+                sg = addToStringBuilder(new String[]{String.valueOf(p*elements.size()/4+i) + delimiter, elements.get(4 * i).substring(2).replace(" " + delimiter + " ", delimiter), elements.get(4 * i + 1), elements.get(4 * i + 2), elements.get(4 * i + 3)},sg);
+                betterOne = makeItBetter(elements.get(4 * i + 3),String.valueOf(p*elements.size()/4+i),betterOne);
+                //addToStringBuilder(new String[]{String.valueOf(p*elements.size()/4+i) + delimiter, elements.get(4 * i).substring(2).replace(" " + delimiter + " ", delimiter), elements.get(4 * i + 1), elements.get(4 * i + 2), elements.get(4 * i + 3)});
                 /*
                 * the replacing is just for a clearer .csv - just delete useless whitespaces
                 * we add it like that: id, 0 , 1 , 2 , 3
@@ -78,7 +84,8 @@ public class GetSHiet {
         }
         System.out.println("Done! You just receive "+a+" reviews!");
         try {
-            writeInFile(g.id,sg); //write everything in a file, here: .csv
+            writeInFile(g.id,sg,""); //write everything in a file, here: .csv
+            writeInFile(g.id,betterOne,"_review_rating");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -202,27 +209,46 @@ public class GetSHiet {
 }
     */
 
-    private static void writeInFile(String id, StringBuilder sb) throws IOException{
-        String fileName = "Corpora\\GPS_"+id+"_corpus.csv"; //that will be your name of the .csv
+    private static void writeInFile(String id, StringBuilder sb, String detail) throws IOException{
+        String fileName = "Corpora\\GPS_"+id+"_corpus"+detail+".csv"; //that will be your name of the .csv
         PrintWriter pw = new PrintWriter(new File(fileName));
         pw.write(sb.toString()); //write all of the stringbuilder in the file and close it
         pw.close();
         System.out.println("Here is your .csv stored: "+System.getProperty("user.dir")+"\\"+fileName);
     }
 
-    private static void addToStringBuilder(String[] array){
+    private static StringBuilder addToStringBuilder(String[] array,StringBuilder sg){
         for(int i = 0;i<array.length;i++){
             sg.append(array[i]);
         }
         sg.append("\n");
+
+        return sg;
         /*
          * adds the id, name, rating, title, review to the stringbuilder
          */
     }
 
+    /*
+     private static void addToStringBuilder(String[] array){
+        for(int i = 0;i<array.length;i++){
+            sg.append(array[i]);
+        }
+        sg.append("\n");
+        }
+     */
+
     private static int getPageNum(int input){
         return Math.round(input/40); //100 would be pageNum 2, pageNum means three http requests(index 0, 1, 2), what means we will get 120 reviews (the 100 fits in)
     }
 
+    private static StringBuilder makeItBetter(String review, String id,StringBuilder betterOne){
+        ArrayList<String> reviews = new ArrayList<>();
+        for (String e : review.split("\\"+delimiter)[1].split("\\s+")){
+            betterOne = addToStringBuilder(new String[]{id+delimiter,e+delimiter,"no_rating_yet"}, betterOne);
+        }
+
+        return betterOne;
+    }
 }
 
