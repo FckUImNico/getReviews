@@ -8,9 +8,11 @@ import java.util.ArrayList;
 
 
 public class getAppNames {
+    ArrayList<String> elements = new ArrayList<>();
 
     public static void main(String[] args) throws InterruptedException {
-        new getAppNames(100);
+        getAppNames a = new getAppNames(100);
+        System.out.print(a.elements);
     }
 
 
@@ -19,7 +21,6 @@ public class getAppNames {
 
     String test = getApps("start=0&num="+count+"&numChildren=0&cctcss=square-cover&cllayout=NORMAL&ipf=1&xhr=1");
     int x = 0;
-    ArrayList<String> elements = new ArrayList<>();
 
     for(String e : test.split("href=\\\"/store/apps/details\\?id=")) {
         if (e.startsWith("<div>"))continue;

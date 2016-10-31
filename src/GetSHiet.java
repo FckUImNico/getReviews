@@ -16,19 +16,42 @@ public class GetSHiet {
     static boolean checkVar = false;
     static int a;//just used to count some stuff
     static String link;// the url of the website we will get the reviews from
-    String id = link.replace("https://play.google.com/store/apps/details?id=","");//the part replaced is equal to every other gps apps, just the id is needed for some operations
+    //String id = link.replace("https://play.google.com/store/apps/details?id=","");//the part replaced is equal to every other gps apps, just the id is needed for some operations
     static String delimiter = "%";// delimiter for .csv, also used for separate the review-information after parsing them
     static StringBuilder sg = new StringBuilder();//used to put information of all requests together
+    static StringBuilder alexV = new StringBuilder();
+    static StringBuilder betterOne = new StringBuilder();
+
 
     public static void main(String[] args) throws InterruptedException {
-        System.out.println("You might receive an error, when the app has less then 40 reviews!\n"+"URL of GOOGLE Play Store: ");
-        link = new Scanner(System.in).nextLine();
 
         GetSHiet g = new GetSHiet();
-
-        System.out.println("How many reviews do you want? ");
+        makePAttern();
+        System.out.println("How many different apps do you want?");
+        getAppNames apps = new getAppNames(new Scanner(System.in).nextInt());
+        System.out.println("How many reviews do you want per app? ");
         int reviewCount = Integer.parseInt(new Scanner(System.in).nextLine());
+        for (int i = 0;i<apps.elements.size();i++) {
+            doOne(apps.elements.get(i),reviewCount);
+        }
+
+        try {
+            writeInFile("all",sg,""); //write everything in a file, here: .csv
+            writeInFile("all",betterOne,"_review_rating");
+            writeInFile("all",alexV,"alexPattern");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void doOne(String gid, int reviewCount) throws InterruptedException {
+       // System.out.println("You might receive an error, when the app has less then 40 reviews!\n"+"URL of GOOGLE Play Store: ");
+       // link = new Scanner(System.in).nextLine();
+
         int pageNum = getPageNum(reviewCount);
+        String glink = "https://play.google.com/store/apps/details?id="+gid;
+
+        //System.out.println("How many reviews do you want? ");
+        //int reviewCount = Integer.parseInt(new Scanner(System.in).nextLine());
         //System.out.println(pageNum);
 
         String[] splitter = new String[]{
@@ -43,27 +66,11 @@ public class GetSHiet {
 
         System.out.println("Progress has been started...");
         System.out.println("...sending multiple HTTP requests\n"+"This may takes a few seconds or even minutes, but many requests in a short period of time isn't appreciated that much. ");
-        sg = addToStringBuilder(new String[]{"id" + delimiter, "name" + delimiter, "date" + delimiter, "rating" + delimiter, "title" + delimiter, "review"},sg);
-        StringBuilder alexV = new StringBuilder();
-        alexV = addToStringBuilder(new String[]{
-        "id"+delimiter,
-        "appstore"+delimiter,
-        "appname"+delimiter,
-        "reviewlang"+ delimiter,
-        "reviewdate"+ delimiter,
-        "reviewrating"+ delimiter,
-        "reviewtitle"+ delimiter,
-        "reviewphrase"+ delimiter,
-        "reviewuserid"+ delimiter,
-        "reviewusername"+ delimiter,
-        "reviewmetadata"},alexV);
-        //addToStringBuilder(new String[]{"id" + delimiter, "name" + delimiter, "date" + delimiter, "rating" + delimiter, "title" + delimiter, "review"});
-        StringBuilder betterOne = new StringBuilder();
-        betterOne = addToStringBuilder(new String[]{"id"+delimiter,"review-parts"+delimiter,"review-rating"},betterOne);
+
 
         ArrayList<String> elements = new ArrayList<>();//List for separated strings from ONE post request
         for(int p =0;p<=pageNum;p++) {
-            String postRequest = executePost(g.link, "https://play.google.com/store/getreviews?authuser=0", "reviewType=0&id=" + g.id + "&reviewSortOrder=4&xhr=1&pageNum=" + p + "&token=").replaceAll("\\\\u003c", "<").replaceAll("\\\\u003d", "=").replaceAll("\\\\u003e", ">");
+            String postRequest = executePost(glink, "https://play.google.com/store/getreviews?authuser=0", "reviewType=0&id=" + gid + "&reviewSortOrder=4&xhr=1&pageNum=" + p + "&token=").replaceAll("\\\\u003c", "<").replaceAll("\\\\u003d", "=").replaceAll("\\\\u003e", ">");
             for (String e : postRequest.split(splitter[0] + "|" + splitter[1] + "|" + splitter[2] + "|" + splitter[3] + "|" + splitter[4])) { //split the requested stuff
                 String sort = sort(e); //parse the strings, delete unnecessary information
                 if (sort != null) {
@@ -83,7 +90,7 @@ public class GetSHiet {
                 if(p*elements.size()/4+i==reviewCount)break; //stop the loop, when we already reached the given number of reviews the user wanted
                 String id = String.valueOf(p*elements.size()/4+i);
                 String appstore = "GPS";
-                String appname = g.id;
+                String appname = gid;
                 String reviewlang = "deu";
                 String reviewdate = elements.get(4 * i + 1); //already has a delimiter
                 String reviewrating = elements.get(4 * i + 2);//already has a delimiter
@@ -93,9 +100,9 @@ public class GetSHiet {
                 String reviewusername = elements.get(4 * i).substring(2).replace(" " + delimiter + " ", delimiter); //already has delimiter
                 String reviewmetadata = "0";
 
-                sg = addToStringBuilder(new String[]{id + delimiter, reviewusername, reviewdate, reviewrating, reviewtitle+delimiter,reviewphrase},sg);
-                alexV= addToStringBuilder(new String[]{appstore+delimiter,appname+delimiter,reviewlang+delimiter,String.valueOf(timeToMillis(reviewdate.split("\\s+")))+delimiter,reviewrating,reviewtitle+delimiter,reviewphrase+delimiter,reviewuserid+delimiter,reviewusername,reviewmetadata},alexV);
-                betterOne = makeItBetter(reviewphrase,id,betterOne);
+                sg = addToStringBuilder(new String[]{a + delimiter, reviewusername, reviewdate, reviewrating, reviewtitle+delimiter,reviewphrase},sg);
+                alexV= addToStringBuilder(new String[]{a + delimiter,appstore+delimiter,appname+delimiter,reviewlang+delimiter,String.valueOf(timeToMillis(reviewdate.split("\\s+")))+delimiter,reviewrating,reviewtitle+delimiter,reviewphrase+delimiter,reviewuserid+delimiter,reviewusername,reviewmetadata},alexV);
+                betterOne = makeItBetter(reviewphrase,a,betterOne);
                 //addToStringBuilder(new String[]{String.valueOf(p*elements.size()/4+i) + delimiter, elements.get(4 * i).substring(2).replace(" " + delimiter + " ", delimiter), elements.get(4 * i + 1), elements.get(4 * i + 2), elements.get(4 * i + 3)});
                 /*
                 * the replacing is just for a clearer .csv - just delete useless whitespaces
@@ -110,13 +117,6 @@ public class GetSHiet {
             elements.clear(); // clear the list for the next request
         }
         System.out.println("Done! You just receive "+a+" reviews!");
-        try {
-            writeInFile(g.id,sg,""); //write everything in a file, here: .csv
-            writeInFile(g.id,betterOne,"_review_rating");
-            writeInFile(g.id,alexV,"alexPattern");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
     }
 
@@ -270,7 +270,7 @@ public class GetSHiet {
         return Math.round(input/40); //100 would be pageNum 2, pageNum means three http requests(index 0, 1, 2), what means we will get 120 reviews (the 100 fits in)
     }
 
-    private static StringBuilder makeItBetter(String review, String id,StringBuilder betterOne){
+    private static StringBuilder makeItBetter(String review, int id,StringBuilder betterOne){
         for (String e : review.split("\\s+")){
             betterOne = addToStringBuilder(new String[]{id+delimiter,e+delimiter,"1"}, betterOne);
         }
@@ -305,6 +305,24 @@ public class GetSHiet {
         for(i = 0; i <= months.length; i++)
             if(month.equals(months[i])) break;
         return i;
+    }
+
+    private static void makePAttern(){
+        sg = addToStringBuilder(new String[]{"id" + delimiter, "name" + delimiter, "date" + delimiter, "rating" + delimiter, "title" + delimiter, "review"},sg);
+        alexV = addToStringBuilder(new String[]{
+                "id"+delimiter,
+                "appstore"+delimiter,
+                "appname"+delimiter,
+                "reviewlang"+ delimiter,
+                "reviewdate"+ delimiter,
+                "reviewrating"+ delimiter,
+                "reviewtitle"+ delimiter,
+                "reviewphrase"+ delimiter,
+                "reviewuserid"+ delimiter,
+                "reviewusername"+ delimiter,
+                "reviewmetadata"},alexV);
+        //addToStringBuilder(new String[]{"id" + delimiter, "name" + delimiter, "date" + delimiter, "rating" + delimiter, "title" + delimiter, "review"});
+        betterOne = addToStringBuilder(new String[]{"id"+delimiter,"review-parts"+delimiter,"review-rating"},betterOne);
     }
 }
 
