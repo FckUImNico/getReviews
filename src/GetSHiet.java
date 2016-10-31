@@ -3,6 +3,7 @@ import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Scanner;
 
 /**
@@ -16,7 +17,7 @@ public class GetSHiet {
     static int a;//just used to count some stuff
     static String link;// the url of the website we will get the reviews from
     String id = link.replace("https://play.google.com/store/apps/details?id=","");//the part replaced is equal to every other gps apps, just the id is needed for some operations
-    static String delimiter = "|";// delimiter for .csv, also used for separate the review-information after parsing them
+    static String delimiter = "%";// delimiter for .csv, also used for separate the review-information after parsing them
     static StringBuilder sg = new StringBuilder();//used to put information of all requests together
 
     public static void main(String[] args) throws InterruptedException {
@@ -43,6 +44,19 @@ public class GetSHiet {
         System.out.println("Progress has been started...");
         System.out.println("...sending multiple HTTP requests\n"+"This may takes a few seconds or even minutes, but many requests in a short period of time isn't appreciated that much. ");
         sg = addToStringBuilder(new String[]{"id" + delimiter, "name" + delimiter, "date" + delimiter, "rating" + delimiter, "title" + delimiter, "review"},sg);
+        StringBuilder alexV = new StringBuilder();
+        alexV = addToStringBuilder(new String[]{
+        "id"+delimiter,
+        "appstore"+delimiter,
+        "appname"+delimiter,
+        "reviewlang"+ delimiter,
+        "reviewdate"+ delimiter,
+        "reviewrating"+ delimiter,
+        "reviewtitle"+ delimiter,
+        "reviewphrase"+ delimiter,
+        "reviewuserid"+ delimiter,
+        "reviewusername"+ delimiter,
+        "reviewmetadata"},alexV);
         //addToStringBuilder(new String[]{"id" + delimiter, "name" + delimiter, "date" + delimiter, "rating" + delimiter, "title" + delimiter, "review"});
         StringBuilder betterOne = new StringBuilder();
         betterOne = addToStringBuilder(new String[]{"id"+delimiter,"review-parts"+delimiter,"review-rating"},betterOne);
@@ -67,8 +81,21 @@ public class GetSHiet {
             */
             for (int i = 0; i < elements.size() / 4; i++) {/*the splitted and parsed list is in the pattern above - every fourth line begins a new set of data*/
                 if(p*elements.size()/4+i==reviewCount)break; //stop the loop, when we already reached the given number of reviews the user wanted
-                sg = addToStringBuilder(new String[]{String.valueOf(p*elements.size()/4+i) + delimiter, elements.get(4 * i).substring(2).replace(" " + delimiter + " ", delimiter), elements.get(4 * i + 1), elements.get(4 * i + 2), elements.get(4 * i + 3)},sg);
-                betterOne = makeItBetter(elements.get(4 * i + 3),String.valueOf(p*elements.size()/4+i),betterOne);
+                String id = String.valueOf(p*elements.size()/4+i);
+                String appstore = "GPS";
+                String appname = g.id;
+                String reviewlang = "deu";
+                String reviewdate = elements.get(4 * i + 1); //already has a delimiter
+                String reviewrating = elements.get(4 * i + 2);//already has a delimiter
+                String reviewtitle = elements.get(4 * i + 3).split("\\"+delimiter)[0];
+                String reviewphrase = elements.get(4 * i + 3).split("\\"+delimiter)[1];
+                String reviewuserid = String.valueOf(Math.round(Math.random()*10000));
+                String reviewusername = elements.get(4 * i).substring(2).replace(" " + delimiter + " ", delimiter); //already has delimiter
+                String reviewmetadata = "0";
+
+                sg = addToStringBuilder(new String[]{id + delimiter, reviewusername, reviewdate, reviewrating, reviewtitle+delimiter,reviewphrase},sg);
+                alexV= addToStringBuilder(new String[]{appstore+delimiter,appname+delimiter,reviewlang+delimiter,String.valueOf(timeToMillis(reviewdate.split("\\s+")))+delimiter,reviewrating,reviewtitle+delimiter,reviewphrase+delimiter,reviewuserid+delimiter,reviewusername,reviewmetadata},alexV);
+                betterOne = makeItBetter(reviewphrase,id,betterOne);
                 //addToStringBuilder(new String[]{String.valueOf(p*elements.size()/4+i) + delimiter, elements.get(4 * i).substring(2).replace(" " + delimiter + " ", delimiter), elements.get(4 * i + 1), elements.get(4 * i + 2), elements.get(4 * i + 3)});
                 /*
                 * the replacing is just for a clearer .csv - just delete useless whitespaces
@@ -86,6 +113,7 @@ public class GetSHiet {
         try {
             writeInFile(g.id,sg,""); //write everything in a file, here: .csv
             writeInFile(g.id,betterOne,"_review_rating");
+            writeInFile(g.id,alexV,"alexPattern");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -243,12 +271,40 @@ public class GetSHiet {
     }
 
     private static StringBuilder makeItBetter(String review, String id,StringBuilder betterOne){
-        ArrayList<String> reviews = new ArrayList<>();
-        for (String e : review.split("\\"+delimiter)[1].split("\\s+")){
-            betterOne = addToStringBuilder(new String[]{id+delimiter,e+delimiter,"no_rating_yet"}, betterOne);
+        for (String e : review.split("\\s+")){
+            betterOne = addToStringBuilder(new String[]{id+delimiter,e+delimiter,"1"}, betterOne);
         }
 
         return betterOne;
+    }
+
+    private static long timeToMillis(String[] date){
+        int year = Integer.parseInt(date[2].substring(0,date[2].length()-1));
+        int month = getMonth(date[1]);
+        int day = Integer.parseInt(date[0].replace(".",""));
+        Date d = new Date(year-1900, month, day);
+        return d.getTime();
+    }
+
+    private static int getMonth(String month){
+        String[] months = new String[]{
+                "Januar",
+                "Februar",
+                "März",
+                "April",
+                "Mai",
+                "Juni",
+                "Juli",
+                "August",
+                "September",
+                "Oktober",
+                "November",
+                "Dezember"
+        };
+        int i;
+        for(i = 0; i <= months.length; i++)
+            if(month.equals(months[i])) break;
+        return i;
     }
 }
 
