@@ -113,6 +113,7 @@ public class GetSHiet {
                 a++;
             }
             System.out.println(elements.size()/4+" reviews found.");
+            System.out.println(elements.size()/4+" reviews found. | "+gid);
             if(elements.size()<=0)break; //when the list is empty, the request wasnt able to get more reviews, so we might already got all of them - so we can stop it
             elements.clear(); // clear the list for the next request
         }
@@ -272,7 +273,7 @@ public class GetSHiet {
 
     private static StringBuilder makeItBetter(String review, int id,StringBuilder betterOne){
         for (String e : review.split("\\s+")){
-            betterOne = addToStringBuilder(new String[]{id+delimiter,e+delimiter,"1"}, betterOne);
+            betterOne = addToStringBuilder(new String[]{id+delimiter,e+delimiter,getRating(e)}, betterOne);
         }
 
         return betterOne;
@@ -323,6 +324,21 @@ public class GetSHiet {
                 "reviewmetadata"},alexV);
         //addToStringBuilder(new String[]{"id" + delimiter, "name" + delimiter, "date" + delimiter, "rating" + delimiter, "title" + delimiter, "review"});
         betterOne = addToStringBuilder(new String[]{"id"+delimiter,"review-parts"+delimiter,"review-rating"},betterOne);
+    }
+
+    private static String getRating(String word){
+        String[] cases_pos = {"super","cool","geil","excellent","toll","gelungen","liebe","wunderbar","exzellent","augenweide","genial","genialer","geniale","wunderbare","tolles","gelungenes","geil","toll","gefällt","gut","gute","interessant","süchtig","bock","spaß","spannend","spannende","spannendes","tolle","tolles","gute","gutes","spaßig","geiles"};
+        String[] cases_neg = {"scheiße","schade","reinfall","garnicht","schlecht","blöd","doof","kacke","scheiß","nicht","sinnlos","schlechtes","schlechte","doofe","doofes","blödes","sinnloses"};
+        for (String cases_po : cases_pos)
+            if (word.toLowerCase().equals(cases_po)) {
+                return "1";
+            }
+        for (String aCases_neg : cases_neg)
+            if (word.toLowerCase().equals(aCases_neg)) {
+                return "-1";
+            }
+        return "0";
+
     }
 }
 
